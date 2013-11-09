@@ -74,6 +74,24 @@ class APIError(Exception):
 # This class was written by Vaibhav Bhatia. Modified by Jonathan Warren (Atheros).
 # http://code.activestate.com/recipes/501148-xmlrpc-serverclient-which-does-cookie-handling-and/
 class MySimpleXMLRPCRequestHandler(SimpleXMLRPCRequestHandler):
+    def do_GET(self):
+        try:
+            staticPath = shared.config.get('bitmessagesettings', 'apistatic')
+        except:
+            staticPath = ''
+        if staticPath != '':
+            try:
+              with open(staticPath) as infile:
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=UTF-8')
+                self.end_headers()
+                for line in infile:
+                  self.wfile.write(line)
+            except IOError:
+              self.report_404()
+        else:
+            self.report_404()
+        return
 
     def do_POST(self):
         # Handles the HTTP POST request.
@@ -389,7 +407,7 @@ class MySimpleXMLRPCRequestHandler(SimpleXMLRPCRequestHandler):
                 ('getDeterministicAddress', addressVersionNumber,
                  streamNumber, 'unused API address', numberOfAddresses, passphrase, eighteenByteRipe))
             return shared.apiAddressGeneratorReturnQueue.get()
-        
+
         elif method == 'createChan':
             if len(params) == 0:
                 raise APIError(0, 'I need parameters.')
